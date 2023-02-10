@@ -17,7 +17,8 @@ jobs:
     steps:
       - name: Set env
         run: |
-          TEMP=$(echo ${${{secrets.PAGODA_CONSOLE_TOKEN}}:6} | base64 --decode)
+          TEMP_SECRET="${{secrets.PAGODA_CONSOLE_TOKEN}}"
+          TEMP=$(echo ${TEMP_SECRET:6} | base64 --decode)
           echo "GITHUB_REPO_FULL_NAME=$(echo ${TEMP%:*})" >> $GITHUB_ENV
     
       - uses: actions/checkout@v3
@@ -38,7 +39,7 @@ jobs:
         uses: jon-lewis/upload-file-action@master
         with:
           url: '${{ env.PAGODA_CONSOLE_URL }}/deploys/deployWasm'
-          forms: '{"githubRepoFullName":"${{ github.repository }}","commitMessage": "${{ github.event.head_commit.message }}", "commitHash": "${{ github.sha }}"}'
+          forms: '{"githubRepoFullName":"${{ env.GITHUB_REPO_FULL_NAME }}","commitMessage": "${{ github.event.head_commit.message }}", "commitHash": "${{ github.sha }}"}'
           customHeaders: '{"Authorization": "${{ secrets.PAGODA_CONSOLE_TOKEN }}"}'
           fileForms: '{"main.wasm":"${{ env.CONTRACT_WASM_PATH }}"}'
             
@@ -48,7 +49,7 @@ jobs:
           npx next build
           npx next export
         env:
-          NEXT_PUBLIC_CONTRACT_NAME: "${{ fromJson(steps.upload.outputs.output).data.ContractDeployment[0].contractDeployConfig.nearAccountId }}"
+          NEXT_PUBLIC_CONTRACT_NAME: "${{ fromJson(steps.upload.outputs.output).data.contractDeployments[0].contractDeployConfig.nearAccountId }}"
           NEXT_PUBLIC_NEAR_NETWORK: testnet
           # TODO setup your IPFS gateway and update these environment variables:
           NEXT_PUBLIC_IPFS_GRPC_ADDRESS: ''
